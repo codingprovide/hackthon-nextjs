@@ -4,9 +4,10 @@ import { broadcast } from '@/lib/ws';
 
 let currentState = -1;
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const stateParam = url.searchParams.get('state');
+const data = await request.json();
+  const stateParam = data.Sensor_1
   let message: string;
+  //  String jsonString = "{\"Sensor_1\":" + String(state1) + ",\"Sensor_2\":" + String(state2) + "}";
 
   if (stateParam !== null) {
     const parsed = Number(stateParam);
