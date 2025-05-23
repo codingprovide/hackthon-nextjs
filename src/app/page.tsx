@@ -6,7 +6,7 @@ export default function HomePage() {
   const [s2, setS2] = useState<number | null>(null);
 
   useEffect(() => {
-    const es = new EventSource("/api/sensor_state");
+    const es = new EventSource("/api/button_state");
     es.onmessage = (e) => {
       // e.data = '{"Sensor_1":0,"Sensor_2":0}'
       const data = JSON.parse(e.data) as { Sensor_1: number; Sensor_2: number };
