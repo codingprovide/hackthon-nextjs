@@ -1,9 +1,8 @@
 // app/api/button_state/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { broadcast } from '../socket/route';  // 引入 next-ws 實現的 broadcast
+import { broadcast } from '@/lib/ws';
 
 let currentState = -1;
-
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const stateParam = url.searchParams.get('state');
@@ -13,22 +12,15 @@ export async function GET(request: NextRequest) {
     const parsed = Number(stateParam);
     if (Number.isInteger(parsed)) {
       currentState = parsed;
-      // 使用 next-ws 提供的 broadcast
       broadcast({ state: currentState });
-
-      message = parsed === 1
-        ? 'Physical Button Pressed!'
-        : parsed === 0
-          ? 'Physical Button Released!'
-          : `Invalid button state: ${stateParam}`;
-
+      message = parsed === 1 ? 'Pressed' : 'Released';
       console.log(`>>> ${message} <<<`);
     } else {
-      message = `Non-integer button state: ${stateParam}`;
-      console.warn(`>>> ${message} <<<`);
+      message = 'Invalid state';
+      console.warn(`>>> Non-integer: ${stateParam} <<<`);
     }
   } else {
-    message = `Current button state: ${currentState}`;
+    message = `Current: ${currentState}`;
   }
 
   return NextResponse.json({ success: true, state: currentState, message });
