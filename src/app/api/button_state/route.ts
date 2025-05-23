@@ -1,11 +1,20 @@
-// app/api/button_state/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { broadcast } from '@/lib/ws';
 
 let currentState = -1;
 
 export async function POST(request: NextRequest) {
-  const data = await request.json();
+  const bodyText = await request.text();
+  console.log("🔍 Raw POST body:", JSON.stringify(bodyText));
+
+  let data: any;
+  try {
+    data = JSON.parse(bodyText);
+  } catch (e) {
+    console.error("❌ JSON.parse 失败：", e, "bodyText:", bodyText);
+    return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
+  }
+
   const stateParam = data.Sensor_1;
   let message: string;
 
