@@ -3,7 +3,7 @@ import type { WebSocket, WebSocketServer } from 'ws';
 import type { IncomingMessage } from 'http';
 
 /// <reference lib="webworker" />
-export const runtime = 'node';  // next-ws 需在 node 環境下運行
+export const runtime = 'nodejs';  // next-ws 需在 node 環境下運行
 
 let wsServer: WebSocketServer | null = null;
 
