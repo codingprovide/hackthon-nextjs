@@ -3,13 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { broadcast } from '@/lib/ws';
 
 let currentState = -1;
-export async function GET(request: NextRequest) {
-const data = await request.json();
-  const stateParam = data.Sensor_1
-  let message: string;
-  //  String jsonString = "{\"Sensor_1\":" + String(state1) + ",\"Sensor_2\":" + String(state2) + "}";
 
-  if (stateParam !== null) {
+export async function POST(request: NextRequest) {
+  const data = await request.json();
+  const stateParam = data.Sensor_1;
+  let message: string;
+
+  if (stateParam !== undefined && stateParam !== null) {
     const parsed = Number(stateParam);
     if (Number.isInteger(parsed)) {
       currentState = parsed;
