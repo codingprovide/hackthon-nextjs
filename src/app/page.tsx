@@ -60,8 +60,7 @@ export default function HomePage() {
   const { data, error } = useSWR<StatePayload>("/api/state", fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
-    // only fetch once on mount
-    revalidateIfStale: false,
+    revalidateIfStale: false, // only fetch once on mount
   });
 
   const [events, setEvents] = useState<EventEntry[]>([]);
@@ -69,49 +68,74 @@ export default function HomePage() {
   const initialLoaded = useRef(false);
   const esRef = useRef<EventSource | null>(null);
 
+  // 用來記錄所有已渲染過的事件 key，避免重複
+  const seenKeys = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (!data || initialLoaded.current) return;
 
-    // 1) Initialize from the REST endpoint
+    // 1) 初始化 state 並標記已見過的 events
     setEvents(data.events);
+    data.events.forEach((evt) => {
+      seenKeys.current.add(`${evt.id}-${evt.timestamp}`);
+    });
     setCurrentStep(data.currentStep);
     initialLoaded.current = true;
 
-    // 2) Now subscribe to SSE
+    // 2) 訂閱 SSE
     const es = new EventSource("/api/events");
     es.onopen = () => console.log("SSE 已連線");
     es.onmessage = (e) => {
       try {
         const payload = JSON.parse(e.data) as SSEPayload;
 
-        // update process step
+        // 更新 currentStep
         if (payload.currentStep) {
           setCurrentStep(payload.currentStep);
         }
-        // append new events
+
+        // 處理後端 events
         if (payload.events) {
-          setEvents((prev) => [
-            ...prev,
-            ...(payload.events ?? []), // 如果 payload.events 是 undefined，就用空数组
-          ]);
+          setEvents((prev) => {
+            const toAdd = payload.events!.filter((evt) => {
+              const key = `${evt.id}-${evt.timestamp}`;
+              if (seenKeys.current.has(key)) {
+                return false;
+              }
+              seenKeys.current.add(key);
+              return true;
+            });
+            return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+          });
         }
-        // old-style sensor triggers
+
+        // 處理 Sensor_1 / Sensor_2 產生的事件
         const now = new Date().toISOString();
         const sensorHits: EventEntry[] = [];
+
         if (payload.Sensor_1 === 1) {
-          sensorHits.push({
-            // add randomness so IDs never collide
+          const evt: EventEntry = {
             id: Date.now() + Math.random(),
             message: "感測器 Sensor_1 觸發",
             timestamp: now,
-          });
+          };
+          const key = `${evt.id}-${evt.timestamp}`;
+          if (!seenKeys.current.has(key)) {
+            seenKeys.current.add(key);
+            sensorHits.push(evt);
+          }
         }
         if (payload.Sensor_2 === 1) {
-          sensorHits.push({
+          const evt: EventEntry = {
             id: Date.now() + Math.random(),
             message: "感測器 Sensor_2 觸發",
             timestamp: now,
-          });
+          };
+          const key = `${evt.id}-${evt.timestamp}`;
+          if (!seenKeys.current.has(key)) {
+            seenKeys.current.add(key);
+            sensorHits.push(evt);
+          }
         }
         if (sensorHits.length) {
           setEvents((prev) => [...prev, ...sensorHits]);
@@ -122,7 +146,6 @@ export default function HomePage() {
     };
     es.onerror = (e) => {
       console.warn("SSE 連線錯誤，將自動重試", e);
-      // 瀏覽器會自動重連，不需要額外處理
     };
 
     esRef.current = es;
@@ -181,7 +204,10 @@ export default function HomePage() {
             <p className="text-center text-gray-500">暫無事件</p>
           ) : (
             events.map((evt) => (
-              <div key={evt.id} className="flex justify-between py-1 border-b">
+              <div
+                key={`${evt.id}-${evt.timestamp}`}
+                className="flex justify-between py-1 border-b"
+              >
                 <span>{evt.message}</span>
                 <span className="text-xs text-gray-500">
                   {new Date(evt.timestamp).toLocaleTimeString("zh-TW", {
