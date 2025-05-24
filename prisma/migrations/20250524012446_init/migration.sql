@@ -1,0 +1,12 @@
+-- CreateTable
+CREATE TABLE "ProcessState" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+    "currentStep" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "Event" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "message" TEXT NOT NULL,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
